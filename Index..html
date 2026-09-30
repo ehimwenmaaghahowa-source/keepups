@@ -1,0 +1,1875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Keepy Uppy — Naija All Stars</title>
+
+<!-- If you join an ad network (AdSense, AdMob web, etc.), paste their
+     loader <script> tag here, then place their ad unit inside #adSlot below
+     and set SHOW_ADS = true in the script. -->
+
+<style>
+:root{
+  --field:#2B3FE0;
+  --signal:#FFD60A;
+  --turf:#19B04F;
+  --chalk:#fff;
+  --ink:#0B1033;
+  --coral:#FF5A4D;
+}
+
+*{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+html,body{
+  margin:0; width:100%; height:100%; overflow:hidden;
+  background:var(--field);
+  font-family:Arial,sans-serif;
+  color:var(--chalk);
+}
+
+body{ touch-action:none; }
+
+#app{ position:fixed; inset:0; overflow:hidden; }
+
+canvas#game{
+  position:absolute; inset:0; width:100%; height:100%;
+  display:block; touch-action:none;
+}
+
+.screen{
+  position:absolute; inset:0; z-index:10;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding:20px; pointer-events:none;
+}
+.screen>*{ pointer-events:auto; }
+#board{ z-index:20; background:rgba(11,16,51,.55); pointer-events:auto; }
+.hidden{ display:none!important; }
+
+.logo{
+  font-size:clamp(34px,9vw,72px); font-weight:900; line-height:.9;
+  text-align:center; color:var(--signal);
+  text-shadow:5px 5px 0 var(--ink); margin-bottom:8px;
+}
+.subtitle{ font-size:15px; font-weight:800; text-align:center; margin-bottom:10px; text-shadow:2px 2px 0 var(--ink); }
+
+.panel{
+  width:min(94vw,700px); max-height:80vh; overflow:auto;
+  background:rgba(255,255,255,.96); color:var(--ink);
+  border:4px solid var(--ink); border-radius:20px; padding:18px;
+  box-shadow:8px 8px 0 var(--ink);
+}
+.panel h2{ margin:0 0 12px; }
+
+.challenge{
+  background:var(--coral); color:#fff; border:3px solid var(--ink);
+  border-radius:10px; padding:8px 10px; margin-bottom:12px;
+  font-weight:900; font-size:14px; text-align:center;
+}
+
+.nameRow{ display:flex; gap:8px; align-items:center; margin-bottom:12px; }
+.nameRow label{ font-weight:900; font-size:14px; white-space:nowrap; }
+.nameRow input{
+  flex:1; min-width:0; font-size:16px; font-weight:800;
+  padding:9px 10px; border:3px solid var(--ink); border-radius:10px;
+  color:var(--ink); background:#fff;
+}
+.nameRow input:focus-visible{ outline:4px solid var(--coral); outline-offset:1px; }
+
+.artists{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+
+.artist{
+  border:3px solid var(--ink); background:#fff; color:var(--ink);
+  border-radius:12px; padding:10px 6px; text-align:center; cursor:pointer;
+  font-weight:900; font-size:14px; box-shadow:none;
+}
+.artist:active{ transform:none; box-shadow:none; }
+.artist.selected{ background:var(--signal); transform:translateY(-2px); }
+
+.artist-face{
+  width:60px; height:60px; margin:auto; border-radius:50%;
+  overflow:hidden; border:3px solid var(--ink); background:var(--field);
+}
+.artist-face canvas{ width:100%; height:100%; display:block; }
+
+.artist-name{ margin-top:7px; font-size:14px; }
+
+.profile{ margin-top:14px; padding:12px; border:3px solid var(--ink); border-radius:12px; }
+.profile-title{ font-size:22px; font-weight:900; }
+.profile-tag{ font-size:13px; opacity:.7; margin:3px 0 8px; }
+.profile-desc{ font-size:14px; margin-bottom:8px; }
+.ability{ background:var(--ink); color:#fff; padding:9px; border-radius:8px; font-size:13px; font-weight:800; }
+.backdrop{ font-size:12px; margin-top:8px; opacity:.75; }
+
+.music{ display:inline-block; margin-top:10px; color:var(--ink); font-weight:900; }
+
+button{
+  border:4px solid var(--ink); background:var(--signal); color:var(--ink);
+  border-radius:12px; padding:13px 25px; font-size:20px; font-weight:900;
+  cursor:pointer; box-shadow:5px 5px 0 var(--ink);
+}
+button:active{ transform:translate(3px,3px); box-shadow:2px 2px 0 var(--ink); }
+button:focus-visible, a:focus-visible{ outline:4px solid var(--coral); outline-offset:2px; }
+
+button.alt{ background:#fff; font-size:16px; padding:10px 18px; }
+
+#playBtn{ width:100%; margin-top:16px; }
+#boardBtn, #boardBtn2{ width:100%; margin-top:10px; }
+
+.small{ font-size:12px; text-align:center; margin-top:12px; opacity:.7; }
+
+#hud{
+  position:absolute; z-index:5; top:12px; left:12px; right:12px;
+  display:flex; justify-content:space-between; align-items:flex-start;
+  pointer-events:none;
+}
+.hudBox{
+  background:#fff; color:var(--ink); border:3px solid var(--ink);
+  border-radius:10px; padding:7px 11px; font-weight:900;
+}
+#muteBtn{
+  pointer-events:auto; cursor:pointer; padding:4px 10px; font-size:18px;
+  box-shadow:3px 3px 0 var(--ink);
+}
+
+#gameOverScore{ font-size:52px; font-weight:900; color:var(--field); text-align:center; }
+#overChallenge, #overRank{ text-align:center; font-weight:900; margin:0 0 6px; }
+#restartBtn, #shareBtn{ width:100%; }
+#shareBtn{ margin-top:12px; background:#000; color:#fff; }
+#over .panel p{ margin:6px 0; }
+
+/* leaderboard */
+.tabs{ display:flex; gap:8px; margin-bottom:12px; }
+.tabs button{ flex:1; font-size:15px; padding:9px 6px; box-shadow:3px 3px 0 var(--ink); background:#fff; }
+.tabs button.on{ background:var(--signal); }
+
+.row{
+  display:flex; align-items:center; gap:10px;
+  padding:8px 6px; border-bottom:2px solid rgba(11,16,51,.12);
+}
+.row.me{ background:rgba(255,214,10,.45); border-radius:8px; }
+.row .rk{ width:28px; font-weight:900; text-align:center; }
+.row .av{ width:36px; height:36px; border-radius:50%; overflow:hidden; border:2px solid var(--ink); flex:none; }
+.row .av canvas{ width:100%; height:100%; display:block; }
+.row .who{ flex:1; min-width:0; }
+.row .who b{ display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.row .who span{ font-size:12px; opacity:.7; }
+.row .sc{ font-weight:900; font-size:18px; }
+
+.bar{ height:6px; background:rgba(11,16,51,.12); border-radius:4px; margin-top:5px; overflow:hidden; }
+.bar i{ display:block; height:100%; }
+
+.empty{ text-align:center; padding:16px 0; opacity:.7; font-weight:700; }
+.note{ font-size:12px; opacity:.65; margin:10px 0 0; text-align:center; }
+
+#closeBoard{ width:100%; margin-top:14px; }
+
+.adSlot{
+  margin-top:12px; min-height:60px; border:2px dashed rgba(11,16,51,.3);
+  border-radius:10px; display:flex; align-items:center; justify-content:center;
+  font-size:11px; opacity:.85;
+}
+</style>
+</head>
+
+<body>
+
+<div id="app">
+
+<canvas id="game"></canvas>
+
+<div id="hud">
+  <div class="hudBox">SCORE: <span id="score">0</span></div>
+  <div class="hudBox">BEST: <span id="best">0</span></div>
+  <button id="muteBtn" type="button" aria-label="Toggle sound">🔊</button>
+</div>
+
+<!-- MENU -->
+<div id="menu" class="screen">
+
+  <div class="logo">KEEPY<br>UPPY</div>
+  <div class="subtitle">🇳🇬 NAIJA ALL STARS ⚽</div>
+
+  <div class="panel">
+    <div id="challengeBanner" class="challenge hidden"></div>
+
+    <div class="nameRow">
+      <label for="nameInput">Your name</label>
+      <input id="nameInput" type="text" maxlength="14" placeholder="Guest" autocomplete="nickname" autocapitalize="words" spellcheck="false">
+    </div>
+
+    <h2>Choose your artist</h2>
+    <div id="artists" class="artists"></div>
+    <div id="profile" class="profile"></div>
+
+    <button id="playBtn" type="button">PLAY</button>
+    <button id="boardBtn" class="alt" type="button">🏆 LEADERBOARD</button>
+
+    <div class="small">
+      Tap the ball when it drops into the dashed zone • Tap left/right to steer
+    </div>
+  </div>
+</div>
+
+<!-- GAME OVER -->
+<div id="over" class="screen hidden">
+  <div class="panel">
+    <h2>GAME OVER</h2>
+    <div id="gameOverScore">0</div>
+
+    <p id="overRank"></p>
+    <p id="overChallenge"></p>
+    <p id="overArtist"></p>
+    <p id="overAbility"></p>
+
+    <button id="restartBtn" type="button">PLAY AGAIN</button>
+    <button id="boardBtn2" class="alt" type="button">🏆 LEADERBOARD</button>
+    <button id="shareBtn" type="button">𝕏 SHARE CHALLENGE</button>
+
+    <a id="musicLink" class="music" target="_blank" rel="noopener">🎵 Listen to artist</a>
+
+    <!-- Ad unit goes here (shown only between runs, never during play). -->
+    <div id="adSlot" class="adSlot hidden">Ad</div>
+  </div>
+</div>
+
+<!-- LEADERBOARD -->
+<div id="board" class="screen hidden">
+  <div class="panel">
+    <h2>🏆 Leaderboard</h2>
+
+    <div class="tabs">
+      <button id="tabPlayers" class="on" type="button">Top players</button>
+      <button id="tabFans" type="button">Fan bases</button>
+    </div>
+
+    <div id="boardList"></div>
+    <p id="boardNote" class="note"></p>
+
+    <button id="closeBoard" type="button">BACK</button>
+  </div>
+</div>
+
+</div>
+
+<script>
+"use strict";
+
+/* =========================================================
+   SETTINGS YOU CAN CHANGE
+========================================================= */
+
+// Leave "" to keep scores on this device only.
+// To make the leaderboard global, point this at your own server that
+// implements:  GET  {URL}/scores?limit=500  -> [{n,a,s}, ...]
+//              POST {URL}/scores            <- {n,a,s}
+const LEADERBOARD_URL = "/.netlify/functions";
+
+// Flip to true once an ad unit is placed inside #adSlot.
+const SHOW_ADS = false;
+
+
+/* =========================================================
+   ARTISTS
+   Gameplay stats: gravity, steer, window, kick, wall, damp, save
+   look   : the cartoon footballer drawn for this artist
+   bgNote : what the drawn backdrop is inspired by
+   bgImage: OPTIONAL path/URL to an image you have the rights to use
+========================================================= */
+
+const DEFAULTS = { gravity:1, steer:1, window:1, kick:1, wall:.85, damp:.985, save:1 };
+
+const ARTISTS = [
+  {
+    id:"wizkid", name:"Wizkid", tag:"Global hitmaker • Starboy",
+    desc:"Smooth control with Starboy energy.",
+    ability:"STARBOY TOUCH — slower ball fall and a wider timing window.",
+    music:"https://open.spotify.com/search/Wizkid", accent:"#FFD60A",
+    stats:{ gravity:.88, steer:1.05, window:1.18 },
+    look:{ skin:"#7b4a2d", hair:"fade", hairColor:"#111", acc:["chain"] },
+    bgNote:"Golden-hour Lagos sunset, inspired by Made in Lagos", bgImage:""
+  },
+  {
+    id:"davido", name:"Davido", tag:"30BG energy",
+    desc:"Big-match energy and powerful steering.",
+    ability:"30BG POWER — much stronger steering.",
+    music:"https://open.spotify.com/search/Davido", accent:"#FF5A4D",
+    stats:{ steer:1.3 },
+    look:{ skin:"#5b3520", hair:"fade", hairColor:"#111", acc:["cap","chain"], accColor:"#FFD60A" },
+    bgNote:"Gold rays and 30BG, inspired by Timeless", bgImage:""
+  },
+  {
+    id:"burna", name:"Burna Boy", tag:"African Giant",
+    desc:"Heavyweight control and steady recovery.",
+    ability:"AFRICAN GIANT — the ball drifts less and settles faster.",
+    music:"https://open.spotify.com/search/Burna%20Boy", accent:"#19B04F",
+    stats:{ gravity:.96, steer:1.04, damp:.968 },
+    look:{ skin:"#4a2c1a", hair:"fade", hairColor:"#111", acc:["shades","chain"] },
+    bgNote:"Golden globe lines, inspired by African Giant", bgImage:""
+  },
+  {
+    id:"rema", name:"Rema", tag:"Rave mode",
+    desc:"Fast, energetic and aggressive.",
+    ability:"RAVE MODE — faster steering and stronger kicks.",
+    music:"https://open.spotify.com/search/Rema", accent:"#7B61FF",
+    stats:{ gravity:1.02, steer:1.15, kick:1.12 },
+    look:{ skin:"#6d3f24", hair:"twists", hairColor:"#111", acc:["shades"] },
+    bgNote:"Neon roses and rings, inspired by Rave & Roses", bgImage:""
+  },
+  {
+    id:"shally", name:"Shally", tag:"Pluto bounce",
+    desc:"Playful and unpredictable.",
+    ability:"PLUTO BOUNCE — walls give your ball extra rebound.",
+    music:"https://open.spotify.com/search/Shallipopi", accent:"#FF9F1C",
+    stats:{ gravity:.99, steer:1.08, wall:1.08 },
+    look:{ skin:"#5d3820", hair:"fade", hairColor:"#111", acc:["bucket"], accColor:"#19B04F" },
+    bgNote:"A ringed planet in the sky, inspired by Pluto", bgImage:""
+  },
+  {
+    id:"benson", name:"Benson", tag:"Smooth energy",
+    desc:"Balanced control.",
+    ability:"BENSON BOOST — a little extra of everything.",
+    music:"https://open.spotify.com/search/Benson", accent:"#00B8D9",
+    stats:{ steer:1.06, window:1.06, kick:1.04 },
+    look:{ skin:"#8a5530", hair:"fade", hairColor:"#111", acc:["chain"] },
+    bgNote:"Smooth ocean waves", bgImage:""
+  },
+  {
+    id:"poppy", name:"Poppy", tag:"Pop energy",
+    desc:"Light and playful control.",
+    ability:"POPPY POP — light, high bounces off the ground.",
+    music:"https://open.spotify.com/search/Poppy", accent:"#FF4FA3",
+    stats:{ gravity:.96, steer:1.05, save:1.25 },
+    look:{ skin:"#7a4a2a", hair:"bun", hairColor:"#FF4FA3", acc:[] },
+    bgNote:"Pop-art halftone dots", bgImage:""
+  },
+  {
+    id:"tems", name:"Tems", tag:"Vocal control",
+    desc:"Calm and composed.",
+    ability:"VOCAL CONTROL — wider timing window.",
+    music:"https://open.spotify.com/search/Tems", accent:"#A8DADC",
+    stats:{ gravity:.94, window:1.25 },
+    look:{ skin:"#5a3420", hair:"braids", hairColor:"#111", acc:[] },
+    bgNote:"Moonlit ripples, inspired by For Broken Ears", bgImage:""
+  },
+  {
+    id:"tiwa", name:"Tiwa Savage", tag:"Queen energy",
+    desc:"Confident all-round control.",
+    ability:"QUEEN'S TOUCH — balanced boost to steering, timing and gravity.",
+    music:"https://open.spotify.com/search/Tiwa%20Savage", accent:"#FF6B6B",
+    stats:{ gravity:.96, steer:1.08, window:1.08 },
+    look:{ skin:"#8b5a36", hair:"long", hairColor:"#3a1f12", acc:["crown"] },
+    bgNote:"Royal red and gold lattice, inspired by Celia", bgImage:""
+  },
+  {
+    id:"ayra", name:"Ayra Starr", tag:"Starr power",
+    desc:"Bright and agile.",
+    ability:"STARR BOOST — faster steering.",
+    music:"https://open.spotify.com/search/Ayra%20Starr", accent:"#F7B2D8",
+    stats:{ gravity:1.01, steer:1.25 },
+    look:{ skin:"#75462a", hair:"bun", hairColor:"#F7B2D8", acc:[] },
+    bgNote:"Pink sky full of stars, inspired by 19 & Dangerous", bgImage:""
+  },
+  {
+    id:"yemi", name:"Yemi Alade", tag:"Mama Africa",
+    desc:"Strong and steady.",
+    ability:"MAMA AFRICA — stronger recovery when the ball hits the ground.",
+    music:"https://open.spotify.com/search/Yemi%20Alade", accent:"#F4A261",
+    stats:{ gravity:.95, steer:1.03, save:1.4 },
+    look:{ skin:"#6b4028", hair:"puff", hairColor:"#111", acc:["wrap"], accColor:"#F4A261" },
+    bgNote:"Ankara-style patterns, inspired by Mama Africa", bgImage:""
+  },
+  {
+    id:"simi", name:"Simi", tag:"Sweet touch",
+    desc:"Smooth and controlled.",
+    ability:"SWEET TOUCH — softer gravity and a wider timing window.",
+    music:"https://open.spotify.com/search/Simi", accent:"#CDB4DB",
+    stats:{ gravity:.93, window:1.12 },
+    look:{ skin:"#8d5a38", hair:"puff", hairColor:"#111", acc:[] },
+    bgNote:"Soft lavender bubbles, inspired by Simisola", bgImage:""
+  }
+];
+
+ARTISTS.forEach(a => { a.s = Object.assign({}, DEFAULTS, a.stats); });
+
+
+/* =========================================================
+   SAFE STORAGE (falls back to memory if localStorage is blocked)
+========================================================= */
+
+const memStore = {};
+
+function lsGet(k){
+  try{ const v = localStorage.getItem(k); return v === null ? (memStore[k] || null) : v; }
+  catch(e){ return memStore[k] || null; }
+}
+function lsSet(k, v){
+  memStore[k] = String(v);
+  try{ localStorage.setItem(k, String(v)); }
+  catch(e){ /* memory fallback already set */ }
+}
+
+
+/* =========================================================
+   DOM
+========================================================= */
+
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+const menu = document.getElementById("menu");
+const over = document.getElementById("over");
+const boardScreen = document.getElementById("board");
+
+const scoreEl = document.getElementById("score");
+const bestEl = document.getElementById("best");
+
+const artistsEl = document.getElementById("artists");
+const profileEl = document.getElementById("profile");
+const nameInput = document.getElementById("nameInput");
+
+const playBtn = document.getElementById("playBtn");
+const restartBtn = document.getElementById("restartBtn");
+const shareBtn = document.getElementById("shareBtn");
+const boardBtn = document.getElementById("boardBtn");
+const boardBtn2 = document.getElementById("boardBtn2");
+const closeBoard = document.getElementById("closeBoard");
+const tabPlayers = document.getElementById("tabPlayers");
+const tabFans = document.getElementById("tabFans");
+const boardList = document.getElementById("boardList");
+const boardNote = document.getElementById("boardNote");
+
+const gameOverScore = document.getElementById("gameOverScore");
+const overArtist = document.getElementById("overArtist");
+const overAbility = document.getElementById("overAbility");
+const overChallenge = document.getElementById("overChallenge");
+const overRank = document.getElementById("overRank");
+const musicLink = document.getElementById("musicLink");
+const challengeBanner = document.getElementById("challengeBanner");
+const adSlot = document.getElementById("adSlot");
+
+const muteBtn = document.getElementById("muteBtn");
+
+
+/* =========================================================
+   DRAWING HELPERS
+========================================================= */
+
+const INK = "#0B1033";
+
+function rr(c, x, y, w, h, r){
+  c.beginPath();
+  c.moveTo(x + r, y);
+  c.arcTo(x + w, y, x + w, y + h, r);
+  c.arcTo(x + w, y + h, x, y + h, r);
+  c.arcTo(x, y + h, x, y, r);
+  c.arcTo(x, y, x + w, y, r);
+  c.closePath();
+}
+
+function fillStroke(c, fill){
+  c.fillStyle = fill;
+  c.fill();
+  c.lineWidth = 2.5;
+  c.strokeStyle = INK;
+  c.stroke();
+}
+
+function vgrad(c, w, h, stops){
+  const g = c.createLinearGradient(0, 0, 0, h);
+  stops.forEach(s => g.addColorStop(s[0], s[1]));
+  c.fillStyle = g;
+  c.fillRect(0, 0, w, h);
+}
+
+function rng(seed){
+  return function(){
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+function starPath(c, x, y, r, inner){
+  c.beginPath();
+  for(let i = 0; i < 10; i++){
+    const ang = -Math.PI / 2 + i * Math.PI / 5;
+    const rad = i % 2 === 0 ? r : r * (inner || .45);
+    const px = x + Math.cos(ang) * rad;
+    const py = y + Math.sin(ang) * rad;
+    if(i === 0) c.moveTo(px, py); else c.lineTo(px, py);
+  }
+  c.closePath();
+}
+
+
+/* =========================================================
+   CHARACTER — a cartoon footballer for each artist
+   Origin is the feet; about 125 units tall at scale 1.
+========================================================= */
+
+function hairBack(c, L){
+  if(L.hair === "long"){
+    rr(c, -19, -116, 38, 52, 14);
+    fillStroke(c, L.hairColor);
+  }
+  if(L.hair === "braids"){
+    c.lineCap = "round";
+    for(let i = 0; i < 5; i++){
+      const bx = -14 + i * 7;
+      c.beginPath();
+      c.moveTo(bx, -112);
+      c.lineTo(bx + (i - 2) * 1.5, -72);
+      c.lineWidth = 5;
+      c.strokeStyle = L.hairColor;
+      c.stroke();
+    }
+    c.lineCap = "butt";
+  }
+  if(L.hair === "puff"){
+    c.beginPath();
+    c.arc(0, -121, 15, 0, Math.PI * 2);
+    fillStroke(c, L.hairColor);
+  }
+}
+
+function hairFront(c, L){
+  c.beginPath();
+  c.arc(0, -107, 16, Math.PI * 1.08, Math.PI * 1.92);
+  c.closePath();
+  fillStroke(c, L.hairColor);
+
+  if(L.hair === "twists"){
+    [-10, -5, 0, 5, 10].forEach(x => {
+      c.beginPath();
+      c.arc(x, -123, 4, 0, Math.PI * 2);
+      fillStroke(c, L.hairColor);
+    });
+  }
+  if(L.hair === "bun"){
+    [-12, 12].forEach(x => {
+      c.beginPath();
+      c.arc(x, -121, 7, 0, Math.PI * 2);
+      fillStroke(c, L.hairColor);
+    });
+  }
+}
+
+function drawCharacter(c, a, x, y, s, o){
+  const L = a.look;
+  const acc = L.acc || [];
+
+  c.save();
+  c.translate(x, y + (o.bob || 0));
+  c.scale(s * o.facing, s);
+  c.lineJoin = "round";
+
+  function arm(px, py, ang){
+    c.save();
+    c.translate(px, py);
+    c.rotate(ang);
+    rr(c, -4, 0, 8, 26, 4);
+    fillStroke(c, L.skin);
+    c.restore();
+  }
+
+  function leg(px, py, ang){
+    c.save();
+    c.translate(px, py);
+    c.rotate(ang);
+    rr(c, -5.5, 0, 11, 44, 4);
+    fillStroke(c, "#fff");
+    c.beginPath();
+    c.ellipse(3, 43, 10, 5, 0, 0, Math.PI * 2);
+    fillStroke(c, "#111");
+    c.restore();
+  }
+
+  arm(-16, -84, .55 + o.kick * .3);
+
+  hairBack(c, L);
+
+  leg(-8, -46, o.sway);
+  leg(8, -46, -o.kick * 1.25 - o.sway * (1 - o.kick));
+
+  rr(c, -17, -60, 34, 22, 6);
+  fillStroke(c, L.shorts || INK);
+
+  rr(c, -17, -92, 34, 36, 9);
+  fillStroke(c, a.accent);
+  c.fillStyle = "rgba(255,255,255,.75)";
+  c.fillRect(-17, -78, 34, 6);
+
+  if(acc.indexOf("chain") >= 0){
+    c.beginPath();
+    c.arc(0, -92, 10, Math.PI * .15, Math.PI * .85);
+    c.lineWidth = 3;
+    c.strokeStyle = "#FFD60A";
+    c.stroke();
+  }
+
+  arm(16, -84, -.55 - o.kick * .9);
+
+  c.beginPath();
+  c.arc(0, -106, 15, 0, Math.PI * 2);
+  fillStroke(c, L.skin);
+
+  hairFront(c, L);
+
+  if(acc.indexOf("cap") >= 0){
+    c.beginPath();
+    c.arc(0, -108, 16.5, Math.PI, 0);
+    c.closePath();
+    fillStroke(c, L.accColor || a.accent);
+    rr(c, 2, -113, 20, 4, 2);
+    fillStroke(c, L.accColor || a.accent);
+  }
+  if(acc.indexOf("bucket") >= 0){
+    rr(c, -13, -131, 26, 18, 7);
+    fillStroke(c, L.accColor || a.accent);
+    c.beginPath();
+    c.ellipse(0, -113, 21, 5, 0, 0, Math.PI * 2);
+    fillStroke(c, L.accColor || a.accent);
+  }
+  if(acc.indexOf("wrap") >= 0){
+    rr(c, -16, -121, 32, 9, 4);
+    fillStroke(c, L.accColor || a.accent);
+    c.beginPath();
+    c.arc(12, -124, 6, 0, Math.PI * 2);
+    fillStroke(c, L.accColor || a.accent);
+  }
+  if(acc.indexOf("crown") >= 0){
+    c.beginPath();
+    c.moveTo(-11, -121);
+    c.lineTo(-11, -134);
+    c.lineTo(-5, -127);
+    c.lineTo(0, -137);
+    c.lineTo(5, -127);
+    c.lineTo(11, -134);
+    c.lineTo(11, -121);
+    c.closePath();
+    fillStroke(c, "#FFD60A");
+  }
+
+  if(acc.indexOf("shades") >= 0){
+    rr(c, -12, -112, 24, 8, 3);
+    fillStroke(c, "#111");
+  }else{
+    c.fillStyle = "#111";
+    c.beginPath(); c.arc(-5, -108, 1.9, 0, Math.PI * 2); c.fill();
+    c.beginPath(); c.arc(5, -108, 1.9, 0, Math.PI * 2); c.fill();
+  }
+  c.beginPath();
+  c.arc(0, -102, 6, Math.PI * .15, Math.PI * .85);
+  c.lineWidth = 2;
+  c.strokeStyle = "#111";
+  c.stroke();
+
+  c.restore();
+}
+
+
+/* =========================================================
+   BACKDROPS — drawn in code, one mood per artist
+========================================================= */
+
+function palm(c, x, baseY, ph, dir){
+  c.strokeStyle = "#140c33";
+  c.lineWidth = 6;
+  c.lineCap = "round";
+  const tx = x + dir * ph * .18;
+  const ty = baseY - ph;
+
+  c.beginPath();
+  c.moveTo(x, baseY);
+  c.quadraticCurveTo(x + dir * ph * .02, baseY - ph * .5, tx, ty);
+  c.stroke();
+
+  c.lineWidth = 4;
+  for(let i = 0; i < 7; i++){
+    const ang = -Math.PI + (i / 6) * Math.PI;
+    const lx = tx + Math.cos(ang) * ph * .45;
+    const ly = ty + Math.sin(ang) * ph * .25 + ph * .12;
+    c.beginPath();
+    c.moveTo(tx, ty);
+    c.quadraticCurveTo(tx + Math.cos(ang) * ph * .25, ty - ph * .18, lx, ly);
+    c.stroke();
+  }
+  c.lineCap = "butt";
+}
+
+function rose(c, x, y, r){
+  c.lineWidth = 2.5;
+  c.strokeStyle = "#ff4fa3";
+  for(let i = 0; i < 6; i++){
+    c.beginPath();
+    c.arc(x, y, r * (1 - i * .15), i * 1.2, i * 1.2 + 4.6);
+    c.stroke();
+  }
+}
+
+const BACKDROPS = {
+
+  wizkid(c, w, h){
+    vgrad(c, w, h, [[0, "#2a1a6e"], [.55, "#ff6a3d"], [1, "#ffd60a"]]);
+    const r = Math.min(w, h) * .2;
+    c.fillStyle = "#fff3b0";
+    c.beginPath(); c.arc(w / 2, h * .62, r, 0, Math.PI * 2); c.fill();
+
+    c.fillStyle = "rgba(42,26,110,.45)";
+    c.fillRect(0, h * .74, w, h * .26);
+    c.strokeStyle = "rgba(255,243,176,.35)";
+    c.lineWidth = 2;
+    for(let i = 0; i < 6; i++){
+      const y = h * .76 + i * h * .04;
+      c.beginPath(); c.moveTo(w * .25, y); c.lineTo(w * .75, y); c.stroke();
+    }
+    palm(c, w * .12, h, h * .55, 1);
+    palm(c, w * .88, h, h * .48, -1);
+  },
+
+  davido(c, w, h){
+    vgrad(c, w, h, [[0, "#0b1033"], [1, "#243bc9"]]);
+    const cx = w / 2, cy = h;
+    for(let i = 0; i < 16; i++){
+      const a1 = Math.PI + (i / 16) * Math.PI;
+      const a2 = Math.PI + ((i + .5) / 16) * Math.PI;
+      c.fillStyle = "rgba(255,214,10,.13)";
+      c.beginPath();
+      c.moveTo(cx, cy);
+      c.lineTo(cx + Math.cos(a1) * h * 1.6, cy + Math.sin(a1) * h * 1.6);
+      c.lineTo(cx + Math.cos(a2) * h * 1.6, cy + Math.sin(a2) * h * 1.6);
+      c.closePath();
+      c.fill();
+    }
+    c.fillStyle = "rgba(255,214,10,.16)";
+    c.font = "900 " + Math.min(w * .34, 210) + "px Arial";
+    c.textAlign = "center";
+    c.fillText("30BG", w / 2, h * .42);
+    c.strokeStyle = "rgba(255,214,10,.45)";
+    c.lineWidth = 3;
+    c.beginPath(); c.arc(w / 2, h * .62, Math.min(w, h) * .2, 0, Math.PI * 2); c.stroke();
+  },
+
+  burna(c, w, h){
+    vgrad(c, w, h, [[0, "#04140a"], [1, "#0c6b2f"]]);
+    const cx = w / 2, cy = h * .5, r = Math.min(w, h) * .32;
+    c.strokeStyle = "rgba(255,214,10,.5)";
+    c.lineWidth = 2;
+    c.beginPath(); c.arc(cx, cy, r, 0, Math.PI * 2); c.stroke();
+    [.3, .6, .85].forEach(k => {
+      c.beginPath(); c.ellipse(cx, cy, r * k, r, 0, 0, Math.PI * 2); c.stroke();
+    });
+    [-.6, -.3, 0, .3, .6].forEach(k => {
+      const ry = r * Math.sqrt(1 - k * k);
+      c.beginPath(); c.ellipse(cx, cy + r * k, ry, ry * .18, 0, 0, Math.PI * 2); c.stroke();
+    });
+  },
+
+  rema(c, w, h){
+    vgrad(c, w, h, [[0, "#0a0018"], [1, "#5b0f8a"]]);
+    const rand = rng(7);
+    c.fillStyle = "rgba(255,255,255,.8)";
+    for(let i = 0; i < 40; i++){
+      c.beginPath();
+      c.arc(rand() * w, rand() * h, rand() * 1.8 + .4, 0, Math.PI * 2);
+      c.fill();
+    }
+    c.strokeStyle = "rgba(255,79,163,.6)";
+    c.lineWidth = 3;
+    for(let i = 1; i <= 4; i++){
+      c.beginPath(); c.arc(w / 2, h * .45, i * Math.min(w, h) * .09, 0, Math.PI * 2); c.stroke();
+    }
+    rose(c, w * .18, h * .3, 34);
+    rose(c, w * .82, h * .4, 42);
+    rose(c, w * .5, h * .12, 26);
+  },
+
+  shally(c, w, h){
+    vgrad(c, w, h, [[0, "#1b0b4d"], [1, "#ff9f1c"]]);
+    const rand = rng(11);
+    c.fillStyle = "rgba(255,255,255,.85)";
+    for(let i = 0; i < 35; i++){
+      c.beginPath();
+      c.arc(rand() * w, rand() * h * .7, rand() * 1.6 + .4, 0, Math.PI * 2);
+      c.fill();
+    }
+    const cx = w / 2, cy = h * .45, r = Math.min(w, h) * .2;
+    c.strokeStyle = "rgba(246,227,196,.8)";
+    c.lineWidth = 6;
+    c.beginPath(); c.ellipse(cx, cy, r * 1.7, r * .4, -.35, Math.PI, Math.PI * 2); c.stroke();
+    c.fillStyle = "#f6e3c4";
+    c.beginPath(); c.arc(cx, cy, r, 0, Math.PI * 2); c.fill();
+    c.fillStyle = "rgba(180,120,80,.35)";
+    c.beginPath(); c.arc(cx - r * .3, cy - r * .2, r * .25, 0, Math.PI * 2); c.fill();
+    c.beginPath(); c.arc(cx + r * .35, cy + r * .3, r * .18, 0, Math.PI * 2); c.fill();
+    c.beginPath(); c.ellipse(cx, cy, r * 1.7, r * .4, -.35, 0, Math.PI); c.stroke();
+    c.fillStyle = "#fff";
+    c.beginPath(); c.arc(w * .15, h * .25, 9, 0, Math.PI * 2); c.fill();
+  },
+
+  benson(c, w, h){
+    vgrad(c, w, h, [[0, "#003b4a"], [1, "#00b8d9"]]);
+    c.lineWidth = 3;
+    for(let k = 0; k < 8; k++){
+      c.strokeStyle = "rgba(255,255,255," + (.08 + k * .03) + ")";
+      c.beginPath();
+      const base = h * (.25 + k * .1);
+      for(let x = 0; x <= w; x += 8){
+        const y = base + Math.sin(x / 50 + k) * 12;
+        if(x === 0) c.moveTo(x, y); else c.lineTo(x, y);
+      }
+      c.stroke();
+    }
+  },
+
+  poppy(c, w, h){
+    c.fillStyle = "#ff4fa3";
+    c.fillRect(0, 0, w, h);
+    c.fillStyle = "#ff9fcf";
+    const step = 26;
+    for(let y = 0; y < h; y += step){
+      for(let x = 0; x < w; x += step){
+        const r = 2 + (y / h) * 9;
+        c.beginPath();
+        c.arc(x + ((y / step) % 2 ? step / 2 : 0), y, r, 0, Math.PI * 2);
+        c.fill();
+      }
+    }
+    c.fillStyle = "rgba(255,255,255,.85)";
+    c.beginPath(); c.arc(w * .5, h * .35, Math.min(w, h) * .14, 0, Math.PI * 2); c.fill();
+  },
+
+  tems(c, w, h){
+    vgrad(c, w, h, [[0, "#3b4fa8"], [1, "#dcd0ff"]]);
+    c.fillStyle = "#fff7e0";
+    c.beginPath(); c.arc(w / 2, h * .33, Math.min(w, h) * .15, 0, Math.PI * 2); c.fill();
+    for(let i = 1; i <= 6; i++){
+      c.strokeStyle = "rgba(255,255,255," + (.6 - i * .08) + ")";
+      c.lineWidth = 2;
+      c.beginPath();
+      c.ellipse(w / 2, h * .86, i * w * .08, i * h * .02, 0, 0, Math.PI * 2);
+      c.stroke();
+    }
+  },
+
+  tiwa(c, w, h){
+    vgrad(c, w, h, [[0, "#3a0010"], [1, "#a3122b"]]);
+    c.strokeStyle = "rgba(255,214,10,.18)";
+    c.lineWidth = 2;
+    for(let i = -h; i < w + h; i += 44){
+      c.beginPath(); c.moveTo(i, 0); c.lineTo(i + h, h); c.stroke();
+      c.beginPath(); c.moveTo(i, h); c.lineTo(i + h, 0); c.stroke();
+    }
+    c.strokeStyle = "rgba(255,214,10,.7)";
+    c.lineWidth = 4;
+    c.beginPath(); c.arc(w / 2, h * .42, Math.min(w, h) * .22, 0, Math.PI * 2); c.stroke();
+  },
+
+  ayra(c, w, h){
+    vgrad(c, w, h, [[0, "#ffb49a"], [1, "#ff7fb6"]]);
+    const rand = rng(23);
+    for(let i = 0; i < 18; i++){
+      c.fillStyle = i % 5 === 0 ? "rgba(255,214,10,.9)" : "rgba(255,255,255,.7)";
+      starPath(c, rand() * w, rand() * h, 8 + rand() * 26, .42);
+      c.fill();
+    }
+  },
+
+  yemi(c, w, h){
+    c.fillStyle = "#14213d";
+    c.fillRect(0, 0, w, h);
+    const cols = ["#F4A261", "#e63946", "#2a9d8f", "#ffd60a"];
+    const cell = 64;
+    for(let j = 0; j * cell < h + cell; j++){
+      for(let i = 0; i * cell < w + cell; i++){
+        const cx = i * cell + cell / 2;
+        const cy = j * cell + cell / 2;
+        const p = (i + j) % 4;
+        [26, 18, 10].forEach((r, k) => {
+          c.fillStyle = cols[(p + k) % 4];
+          c.beginPath(); c.arc(cx, cy, r, 0, Math.PI * 2); c.fill();
+        });
+        c.fillStyle = cols[(p + 2) % 4];
+        c.beginPath();
+        c.moveTo(cx - 6, cy + 30); c.lineTo(cx + 6, cy + 30); c.lineTo(cx, cy + 40);
+        c.closePath(); c.fill();
+      }
+    }
+    c.fillStyle = "rgba(20,33,61,.45)";
+    c.fillRect(0, 0, w, h);
+  },
+
+  simi(c, w, h){
+    vgrad(c, w, h, [[0, "#b9a3f0"], [1, "#ffd1e8"]]);
+    const rand = rng(31);
+    for(let i = 0; i < 18; i++){
+      c.fillStyle = i % 2 ? "rgba(255,255,255,.25)" : "rgba(185,163,240,.3)";
+      c.beginPath();
+      c.arc(rand() * w, rand() * h, 20 + rand() * 70, 0, Math.PI * 2);
+      c.fill();
+    }
+  }
+};
+
+ARTISTS.forEach(a => {
+  if(a.bgImage){
+    const im = new Image();
+    im.onload = function(){
+      a.imgEl = im;
+      bgKey = "";
+      if(state !== "play") draw();
+    };
+    im.src = a.bgImage;
+  }
+});
+
+let bgCache = null;
+let bgKey = "";
+
+function renderBg(a){
+  const off = document.createElement("canvas");
+  off.width = Math.round(W * dpr);
+  off.height = Math.round(H * dpr);
+
+  const c = off.getContext("2d");
+  c.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  const h = H - GROUND_H;
+
+  if(a.imgEl){
+    const iw = a.imgEl.naturalWidth, ih = a.imgEl.naturalHeight;
+    const k = Math.max(W / iw, h / ih);
+    const dw = iw * k, dh = ih * k;
+    c.drawImage(a.imgEl, (W - dw) / 2, (h - dh) / 2, dw, dh);
+    c.fillStyle = "rgba(0,0,0,.3)";
+    c.fillRect(0, 0, W, h);
+  }else{
+    (BACKDROPS[a.id] || BACKDROPS.benson)(c, W, h);
+  }
+
+  return off;
+}
+
+function getBg(){
+  const a = artist();
+  const key = a.id + "|" + W + "x" + H + "|" + dpr + "|" + (a.imgEl ? 1 : 0);
+
+  if(key !== bgKey){
+    bgCache = renderBg(a);
+    bgKey = key;
+  }
+  return bgCache;
+}
+
+
+/* =========================================================
+   CANVAS
+========================================================= */
+
+let W = 0;
+let H = 0;
+let dpr = 1;
+
+const GROUND_H = 70;
+
+function resize(){
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+  W = window.innerWidth;
+  H = window.innerHeight;
+
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+
+  canvas.style.width = W + "px";
+  canvas.style.height = H + "px";
+
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  ball.x = Math.min(Math.max(ball.x, ball.r), W - ball.r);
+  player.x = Math.min(Math.max(player.x, 0), W);
+
+  if(state !== "play") draw();
+}
+
+
+/* =========================================================
+   GAME STATE
+========================================================= */
+
+let state = "menu";
+let selectedArtist = "wizkid";
+
+let score = 0;
+let best = Number(lsGet("keepy_best")) || 0;
+bestEl.textContent = best;
+
+let challengeTarget = 0;
+
+let muted = false;
+
+const ball = { x:0, y:0, vx:0, vy:0, r:25 };
+const player = { x:0, facing:1, kick:0, speed:0, sway:0 };
+
+let particles = [];
+
+let lastTime = 0;
+let rafId = 0;
+let saveUsed = false;
+let lastKickAt = 0;
+let runStart = 0;
+
+/* Ball feel: higher gravity + a slightly stronger kick = a shorter,
+   snappier rally (about 0.75s per cycle). Tune these two to taste. */
+const BASE_GRAVITY = 0.58;
+const KICK_POWER = 13;
+
+const KICK_COOLDOWN = 130;
+const MAX_VX = 14;
+
+window.addEventListener("resize", resize);
+player.x = window.innerWidth / 2;
+ball.x = window.innerWidth / 2;
+ball.y = window.innerHeight / 2;
+resize();
+
+
+/* =========================================================
+   AUDIO
+========================================================= */
+
+let audioCtx = null;
+
+function audio(){
+  if(muted) return;
+
+  if(!audioCtx){
+    try{
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }catch(e){
+      return;
+    }
+  }
+  if(audioCtx.state === "suspended") audioCtx.resume();
+}
+
+function beep(freq, duration = .06){
+  if(muted) return;
+
+  audio();
+  if(!audioCtx) return;
+
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+
+  osc.frequency.value = freq;
+  gain.gain.setValueAtTime(.04, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(.001, audioCtx.currentTime + duration);
+
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  osc.start();
+  osc.stop(audioCtx.currentTime + duration);
+}
+
+
+/* =========================================================
+   PLAYER NAME
+========================================================= */
+
+function cleanName(s){
+  return String(s || "")
+    .replace(/[^\p{L}\p{N} _.\-]/gu, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 14);
+}
+
+function playerName(){
+  return cleanName(nameInput.value) || "Guest";
+}
+
+nameInput.value = cleanName(lsGet("keepy_name") || "");
+
+nameInput.addEventListener("input", function(){
+  lsSet("keepy_name", cleanName(nameInput.value));
+});
+
+
+/* =========================================================
+   LEADERBOARD
+   Entries are {n: name, a: artistId, s: score}, one best score
+   per name + artist. Stored on this device, and also sent to
+   LEADERBOARD_URL when you set one.
+========================================================= */
+
+const BOARD_KEY = "keepy_board_v1";
+
+function sanitizeList(arr){
+  if(!Array.isArray(arr)) return [];
+
+  const ids = {};
+  ARTISTS.forEach(a => { ids[a.id] = true; });
+
+  return arr.filter(e =>
+    e && typeof e.n === "string" && ids[e.a] === true &&
+    Number.isFinite(e.s) && e.s >= 0 && e.s < 100000
+  ).map(e => ({ n: cleanName(e.n) || "Guest", a: e.a, s: Math.floor(e.s) }));
+}
+
+function localList(){
+  try{ return sanitizeList(JSON.parse(lsGet(BOARD_KEY) || "[]")); }
+  catch(e){ return []; }
+}
+
+function saveLocal(list){
+  list.sort((x, y) => y.s - x.s);
+  lsSet(BOARD_KEY, JSON.stringify(list.slice(0, 500)));
+}
+
+function sameEntry(x, y){
+  return x.a === y.a && x.n.toLowerCase() === y.n.toLowerCase();
+}
+
+async function submitScore(entry, duration){
+  const list = localList();
+  const found = list.find(e => sameEntry(e, entry));
+
+  if(found){
+    if(entry.s > found.s) found.s = entry.s;
+  }else{
+    list.push(entry);
+  }
+  saveLocal(list);
+
+  if(LEADERBOARD_URL){
+    try{
+      await fetch(LEADERBOARD_URL + "/scores", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ n: entry.n, a: entry.a, s: entry.s, d: Math.round(duration || 0) })
+      });
+    }catch(e){ /* stays saved locally */ }
+  }
+}
+
+async function fetchBoard(){
+  if(LEADERBOARD_URL){
+    try{
+      const r = await fetch(LEADERBOARD_URL + "/scores?limit=500");
+      if(r.ok) return sanitizeList(await r.json());
+    }catch(e){ /* fall back to local */ }
+  }
+  return localList();
+}
+
+function standings(list){
+  const m = {};
+  ARTISTS.forEach(a => { m[a.id] = { a, total: 0, fans: 0, top: 0 }; });
+
+  list.forEach(e => {
+    const r = m[e.a];
+    r.total += e.s;
+    r.fans += 1;
+    r.top = Math.max(r.top, e.s);
+  });
+
+  return Object.keys(m).map(k => m[k])
+    .sort((x, y) => y.total - x.total || y.fans - x.fans);
+}
+
+let boardTab = "players";
+
+function el(tag, cls, text){
+  const n = document.createElement(tag);
+  if(cls) n.className = cls;
+  if(text !== undefined) n.textContent = text;
+  return n;
+}
+
+function avatarWrap(a){
+  const w = el("div", "av");
+  w.appendChild(avatar(a));
+  return w;
+}
+
+async function renderBoard(){
+  boardList.textContent = "";
+  boardList.appendChild(el("div", "empty", "Loading…"));
+
+  const list = await fetchBoard();
+  const me = playerName().toLowerCase();
+
+  boardList.textContent = "";
+
+  if(boardTab === "players"){
+    const top = list.slice().sort((x, y) => y.s - x.s).slice(0, 20);
+
+    if(!top.length){
+      boardList.appendChild(el("div", "empty", "No scores yet. Play a round to get on the board!"));
+    }
+
+    top.forEach((e, i) => {
+      const a = ARTISTS.find(z => z.id === e.a);
+      const row = el("div", "row" + (e.n.toLowerCase() === me ? " me" : ""));
+
+      row.appendChild(el("div", "rk", String(i + 1)));
+      row.appendChild(avatarWrap(a));
+
+      const who = el("div", "who");
+      who.appendChild(el("b", "", e.n));
+      who.appendChild(el("span", "", "Playing as " + a.name));
+      row.appendChild(who);
+
+      row.appendChild(el("div", "sc", String(e.s)));
+      boardList.appendChild(row);
+    });
+
+    boardNote.textContent = LEADERBOARD_URL
+      ? "Global leaderboard"
+      : "Scores on this device only — connect a server to make it global.";
+  }else{
+    const st = standings(list);
+    const max = Math.max(1, st[0].total);
+
+    st.forEach((r, i) => {
+      const row = el("div", "row");
+
+      row.appendChild(el("div", "rk", String(i + 1)));
+      row.appendChild(avatarWrap(r.a));
+
+      const who = el("div", "who");
+      who.appendChild(el("b", "", r.a.name));
+      who.appendChild(el("span", "", r.fans + (r.fans === 1 ? " fan" : " fans") + " • top score " + r.top));
+
+      const bar = el("div", "bar");
+      const fill = document.createElement("i");
+      fill.style.width = Math.round(r.total / max * 100) + "%";
+      fill.style.background = r.a.accent;
+      bar.appendChild(fill);
+      who.appendChild(bar);
+
+      row.appendChild(who);
+      row.appendChild(el("div", "sc", String(r.total)));
+      boardList.appendChild(row);
+    });
+
+    boardNote.textContent = "Fan base points = every fan's best score with that artist, added together.";
+  }
+}
+
+function openBoard(){
+  boardScreen.classList.remove("hidden");
+  renderBoard();
+}
+
+function setTab(t){
+  boardTab = t;
+  tabPlayers.classList.toggle("on", t === "players");
+  tabFans.classList.toggle("on", t === "fans");
+  renderBoard();
+}
+
+boardBtn.addEventListener("click", openBoard);
+boardBtn2.addEventListener("click", openBoard);
+closeBoard.addEventListener("click", function(){ boardScreen.classList.add("hidden"); });
+tabPlayers.addEventListener("click", function(){ setTab("players"); });
+tabFans.addEventListener("click", function(){ setTab("fans"); });
+
+
+/* =========================================================
+   ARTIST UI
+========================================================= */
+
+function artist(){
+  return ARTISTS.find(a => a.id === selectedArtist) || ARTISTS[0];
+}
+
+function avatar(a){
+  const cv = document.createElement("canvas");
+  cv.width = 108;
+  cv.height = 108;
+
+  const c = cv.getContext("2d");
+  c.fillStyle = a.accent;
+  c.fillRect(0, 0, 108, 108);
+  c.fillStyle = "rgba(255,255,255,.25)";
+  c.beginPath(); c.arc(54, 40, 40, 0, Math.PI * 2); c.fill();
+
+  c.scale(2, 2);
+  drawCharacter(c, a, 27, 93, .66, { kick:0, facing:1, sway:0, bob:0 });
+  return cv;
+}
+
+function renderArtists(){
+  artistsEl.innerHTML = "";
+
+  ARTISTS.forEach(a => {
+    const b = document.createElement("button");
+
+    b.className = "artist" + (a.id === selectedArtist ? " selected" : "");
+    b.type = "button";
+
+    const face = document.createElement("div");
+    face.className = "artist-face";
+    face.appendChild(avatar(a));
+
+    const nm = document.createElement("div");
+    nm.className = "artist-name";
+    nm.textContent = a.name;
+
+    b.appendChild(face);
+    b.appendChild(nm);
+
+    b.addEventListener("click", function(e){
+      e.preventDefault();
+      e.stopPropagation();
+
+      selectedArtist = a.id;
+
+      renderArtists();
+      renderProfile();
+      draw();
+    });
+
+    artistsEl.appendChild(b);
+  });
+}
+
+function renderProfile(){
+  const a = artist();
+
+  profileEl.innerHTML = `
+    <div class="profile-title">${a.name}</div>
+    <div class="profile-tag">${a.tag}</div>
+    <div class="profile-desc">${a.desc}</div>
+    <div class="ability">⚡ ${a.ability}</div>
+    <div class="backdrop">🖼️ Backdrop: ${a.bgNote}</div>
+    <a class="music" href="${a.music}" target="_blank" rel="noopener">🎵 Listen to ${a.name}</a>
+  `;
+}
+
+renderArtists();
+renderProfile();
+
+
+/* =========================================================
+   GAME START
+========================================================= */
+
+function startGame(){
+  cancelAnimationFrame(rafId);
+
+  if(document.activeElement && document.activeElement.blur){
+    document.activeElement.blur();
+  }
+
+  audio();
+
+  const a = artist();
+
+  state = "play";
+
+  score = 0;
+  scoreEl.textContent = "0";
+
+  menu.classList.add("hidden");
+  over.classList.add("hidden");
+  boardScreen.classList.add("hidden");
+
+  player.x = W / 2;
+  player.facing = 1;
+  player.kick = 0;
+  player.speed = 0;
+  player.sway = 0;
+
+  ball.x = W / 2;
+  ball.y = H / 2;
+  ball.vx = 0;
+  ball.vy = 0;
+
+  particles = [];
+  saveUsed = false;
+  lastKickAt = 0;
+  runStart = performance.now();
+
+  if(a.id === "wizkid") createParticles(W / 2, H / 2, 35);
+
+  lastTime = performance.now();
+  rafId = requestAnimationFrame(loop);
+}
+
+playBtn.addEventListener("click", function(e){
+  e.preventDefault();
+  startGame();
+});
+
+restartBtn.addEventListener("click", function(e){
+  e.preventDefault();
+  startGame();
+});
+
+
+/* =========================================================
+   GAME OVER
+========================================================= */
+
+async function recordScore(finalScore, a, duration){
+  overRank.textContent = "";
+
+  if(finalScore <= 0) return;
+
+  const entry = { n: playerName(), a: a.id, s: finalScore };
+
+  await submitScore(entry, duration);
+
+  const list = (await fetchBoard()).sort((x, y) => y.s - x.s);
+  const idx = list.findIndex(e => sameEntry(e, entry));
+
+  if(idx >= 0 && state === "over"){
+    overRank.textContent = "Overall rank: #" + (idx + 1) + " of " + list.length;
+  }
+}
+
+function gameOver(){
+  if(state !== "play") return;
+
+  state = "over";
+  cancelAnimationFrame(rafId);
+
+  if(score > best){
+    best = score;
+    lsSet("keepy_best", best);
+  }
+
+  bestEl.textContent = best;
+  gameOverScore.textContent = score;
+
+  const a = artist();
+
+  overArtist.textContent = "Artist: " + a.name;
+  overAbility.textContent = a.ability;
+
+  if(challengeTarget > 0){
+    overChallenge.textContent = score > challengeTarget
+      ? "🏆 You beat the challenge of " + challengeTarget + "!"
+      : "Challenge: beat " + challengeTarget + " (you need " + (challengeTarget - score + 1) + " more)";
+  }else{
+    overChallenge.textContent = "";
+  }
+
+  musicLink.href = a.music;
+
+  adSlot.classList.toggle("hidden", !SHOW_ADS);
+
+  menu.classList.add("hidden");
+  over.classList.remove("hidden");
+
+  draw();
+
+  recordScore(score, a, performance.now() - runStart);
+}
+
+
+/* =========================================================
+   BALL KICK
+========================================================= */
+
+function groundY(){ return H - GROUND_H; }
+
+function zoneTop(){
+  return groundY() - 140 * artist().s.window;
+}
+
+function ballInZone(){
+  return ball.y + ball.r >= zoneTop() && ball.vy > 0;
+}
+
+function kick(){
+  if(state !== "play") return;
+
+  const now = performance.now();
+  if(now - lastKickAt < KICK_COOLDOWN) return;
+  if(!ballInZone()) return;
+
+  lastKickAt = now;
+
+  const s = artist().s;
+
+  ball.vy = -KICK_POWER * s.kick;
+
+  saveUsed = false;
+  player.kick = 1;
+
+  beep(520);
+
+  score++;
+  scoreEl.textContent = score;
+
+  createParticles(ball.x, ball.y, 8);
+}
+
+
+/* =========================================================
+   STEERING
+========================================================= */
+
+function steer(direction){
+  if(state !== "play") return;
+
+  const s = artist().s;
+
+  ball.vx += direction * 1.5 * s.steer;
+  ball.vx = Math.max(-MAX_VX, Math.min(MAX_VX, ball.vx));
+}
+
+
+/* =========================================================
+   POINTER CONTROL
+========================================================= */
+
+canvas.addEventListener("pointerdown", function(e){
+  e.preventDefault();
+
+  audio();
+
+  if(state !== "play") return;
+
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+
+  const reach = 100 * artist().s.window;
+
+  if(Math.abs(x - ball.x) < reach && ballInZone()){
+    kick();
+  }else if(x < W / 2){
+    steer(-1);
+  }else{
+    steer(1);
+  }
+}, { passive:false });
+
+
+/* =========================================================
+   KEYBOARD
+========================================================= */
+
+window.addEventListener("keydown", function(e){
+  const tag = e.target && e.target.tagName;
+
+  // Typing a name must never start the game or steer the ball.
+  if(tag === "INPUT") return;
+
+  const onControl = tag === "BUTTON" || tag === "A";
+
+  if(e.key === " " || e.key === "Enter"){
+    if(onControl && state !== "play") return;
+
+    e.preventDefault();
+
+    if(boardScreen.classList.contains("hidden") === false) return;
+
+    if(state === "menu" || state === "over"){
+      startGame();
+    }else if(state === "play"){
+      kick();
+    }
+  }
+
+  if(e.key === "ArrowLeft") steer(-1);
+  if(e.key === "ArrowRight") steer(1);
+});
+
+
+/* =========================================================
+   PHYSICS
+========================================================= */
+
+function update(dt){
+  const s = artist().s;
+  const f = dt * 60;
+
+  const ramp = 1 + Math.min(score, 60) * 0.006;
+  const gravity = BASE_GRAVITY * s.gravity * ramp;
+
+  ball.vy += gravity * f;
+
+  ball.x += ball.vx * f;
+  ball.y += ball.vy * f;
+
+  ball.vx *= Math.pow(s.damp, f);
+
+  if(ball.x - ball.r < 0){
+    ball.x = ball.r;
+    ball.vx = Math.min(MAX_VX, Math.abs(ball.vx) * s.wall);
+  }
+
+  if(ball.x + ball.r > W){
+    ball.x = W - ball.r;
+    ball.vx = -Math.min(MAX_VX, Math.abs(ball.vx) * s.wall);
+  }
+
+  if(ball.y - ball.r < 0){
+    ball.y = ball.r;
+    ball.vy = Math.abs(ball.vy) * .5;
+  }
+
+  const maxMove = 320 * dt;
+  const dx = ball.x - player.x;
+  const move = Math.max(-maxMove, Math.min(maxMove, dx));
+
+  player.x += move;
+  player.speed = dt > 0 ? move / dt : 0;
+
+  if(Math.abs(dx) > 4) player.facing = dx > 0 ? 1 : -1;
+
+  player.kick = Math.max(0, player.kick - dt * 5);
+
+  const t = performance.now() / 1000;
+  player.sway = Math.sin(t * 16) * .28 * Math.min(1, Math.abs(player.speed) / 200);
+
+  const ground = groundY();
+
+  if(ball.y + ball.r > ground){
+    const catchRadius = 70 * s.window;
+    const distance = Math.abs(ball.x - player.x);
+
+    if(!saveUsed && distance < catchRadius){
+      saveUsed = true;
+
+      ball.y = ground - ball.r;
+      ball.vy = -Math.max(8, Math.abs(ball.vy) * .6 * s.save);
+
+      player.kick = .9;
+
+      createParticles(ball.x, ground, 10);
+      beep(380);
+    }else{
+      gameOver();
+    }
+  }
+}
+
+
+/* =========================================================
+   PARTICLES
+========================================================= */
+
+function createParticles(x, y, n){
+  for(let i = 0; i < n; i++){
+    particles.push({
+      x, y,
+      vx:(Math.random() - .5) * 5,
+      vy:(Math.random() - .5) * 5,
+      life:1
+    });
+  }
+}
+
+function updateParticles(dt){
+  const f = dt * 60;
+
+  particles.forEach(p => {
+    p.x += p.vx * f;
+    p.y += p.vy * f;
+    p.vy += .08 * f;
+    p.life -= dt * 2;
+  });
+
+  particles = particles.filter(p => p.life > 0);
+}
+
+
+/* =========================================================
+   DRAW
+========================================================= */
+
+function draw(){
+  const a = artist();
+
+  ctx.clearRect(0, 0, W, H);
+
+  ctx.fillStyle = "#2B3FE0";
+  ctx.fillRect(0, 0, W, H);
+  ctx.drawImage(getBg(), 0, 0, W, H);
+
+  ctx.fillStyle = "#19B04F";
+  ctx.fillRect(0, H - GROUND_H, W, GROUND_H);
+
+  ctx.strokeStyle = "#fff";
+  ctx.lineWidth = 4;
+  ctx.setLineDash([]);
+
+  ctx.beginPath();
+  ctx.moveTo(0, H - GROUND_H);
+  ctx.lineTo(W, H - GROUND_H);
+  ctx.stroke();
+
+  if(state === "play"){
+    const active = ballInZone();
+
+    ctx.save();
+    ctx.globalAlpha = active ? .95 : .4;
+    ctx.strokeStyle = active ? "#FFD60A" : "#fff";
+    ctx.lineWidth = 2;
+    ctx.setLineDash([10, 8]);
+
+    ctx.beginPath();
+    ctx.moveTo(0, zoneTop());
+    ctx.lineTo(W, zoneTop());
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  const feetY = H - GROUND_H + 12;
+
+  ctx.fillStyle = "rgba(0,0,0,.25)";
+  ctx.beginPath();
+  ctx.ellipse(player.x, feetY + 2, 26, 6, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  const t = performance.now() / 1000;
+  const moving = Math.min(1, Math.abs(player.speed) / 200);
+
+  drawCharacter(ctx, a, player.x, feetY, .95, {
+    kick:player.kick,
+    facing:player.facing,
+    sway:player.sway,
+    bob:Math.abs(Math.sin(t * 16)) * -2 * moving
+  });
+
+  ctx.fillStyle = "#fff";
+  ctx.beginPath();
+  ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = "#111";
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  ctx.fillStyle = "#111";
+  ctx.beginPath();
+  ctx.arc(ball.x, ball.y, ball.r * .38, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "#fff";
+  ctx.strokeStyle = INK;
+  ctx.lineWidth = 4;
+  ctx.font = "900 16px Arial";
+  ctx.textAlign = "center";
+  ctx.strokeText(a.name, W / 2, 78);
+  ctx.fillText(a.name, W / 2, 78);
+
+  particles.forEach(p => {
+    ctx.globalAlpha = Math.max(0, p.life);
+    ctx.fillStyle = "#FFD60A";
+
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  ctx.globalAlpha = 1;
+}
+
+
+/* =========================================================
+   LOOP
+========================================================= */
+
+function loop(time){
+  if(state !== "play") return;
+
+  const dt = Math.min((time - lastTime) / 1000, .033);
+  lastTime = time;
+
+  update(dt);
+
+  if(state !== "play") return;
+
+  updateParticles(dt);
+  draw();
+
+  rafId = requestAnimationFrame(loop);
+}
+
+
+/* =========================================================
+   MUTE
+========================================================= */
+
+muteBtn.addEventListener("click", function(e){
+  e.preventDefault();
+  e.stopPropagation();
+
+  muted = !muted;
+  muteBtn.textContent = muted ? "🔇" : "🔊";
+});
+
+
+/* =========================================================
+   X SHARE
+========================================================= */
+
+shareBtn.addEventListener("click", function(){
+  const a = artist();
+
+  const text =
+    "I scored " + score + " with " + a.name +
+    " on Keepy Uppy 🇳🇬⚽. Beat my challenge 👇";
+
+  const url =
+    location.href.split("?")[0] +
+    "?player=" + encodeURIComponent(a.id) +
+    "&c=" + score;
+
+  const share =
+    "https://twitter.com/intent/tweet?text=" + encodeURIComponent(text) +
+    "&url=" + encodeURIComponent(url);
+
+  window.open(share, "_blank", "noopener");
+});
+
+
+/* =========================================================
+   CHALLENGE URL
+========================================================= */
+
+function loadChallenge(){
+  const params = new URLSearchParams(window.location.search);
+
+  const playerId = params.get("player");
+  const c = parseInt(params.get("c"), 10);
+
+  if(playerId){
+    const found = ARTISTS.find(a => a.id === playerId);
+    if(found) selectedArtist = found.id;
+  }
+
+  if(Number.isFinite(c) && c > 0){
+    challengeTarget = Math.min(c, 99999);
+
+    challengeBanner.textContent = "🔥 Challenge: beat " + challengeTarget;
+    challengeBanner.classList.remove("hidden");
+  }
+
+  renderArtists();
+  renderProfile();
+}
+
+loadChallenge();
+
+
+/* =========================================================
+   INITIAL DRAW
+========================================================= */
+
+draw();
+</script>
+
+</body>
+</html>
